@@ -1,32 +1,29 @@
+import tensorflow as tf
+from tensorflow import keras
+import numpy as np
+
 import time
 from datetime import datetime as dt
 import os
 from threading import Thread
 
-# for web API
-import textwrap
-from flask import Flask
-from flask import Flask, render_template, request
+from flask import Flask, render_template
+
+
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
-
-import tensorflow as tf
-from tensorflow import keras
-import numpy as np
-
-
 np.random.seed(time.time_ns() % ((1 << 32) - 1))
 tf.random.set_seed(time.time_ns())
 
 
 N = 6400
-m, c = 0.3, 5
+a, b = 0.3, 5
 x = np.linspace(0, 32, N)
-y = m * x + c + np.random.uniform(-1, 1, N)
+y = a * x + b + np.random.uniform(-1, 1, N)
 
 
-
-LEARNING_RATE = 0.01
+m,c = 50,90
+LEARNING_RATE = 0.001
 TRAINING_EPOCHS = 500
 total_epochs = None
 training_result = None
@@ -53,7 +50,7 @@ def perform_training():
             y,
             epochs=TRAINING_EPOCHS // 100,
             callbacks=[TrainingCallback()],
-            verbose=0
+            verbose=1
         )
 
         total_epochs += TRAINING_EPOCHS // 100
@@ -136,8 +133,8 @@ def start_training():
     """
 
 
-@app.route("/stop", endpoint="stop_training", methods=['GET','POST'])
-def stop_training():
+@app.route("/pause", endpoint="stop_training", methods=['GET','POST'])
+def pause_training():
     global model, training, training_end_time, training_thread
 
     if model is not None:
@@ -145,9 +142,6 @@ def stop_training():
             training = False
             training_thread.join()
 
-            # return f"""
-            #     [{dt.time(dt.now())}]: training successfully stopped!
-            # """
             return f"Training paused! After training, we have m = {weights[0][0]: .3f}, c = {biases[0]: .3f}"
         else:
             return f"Training Already completed! After training, we have m = {weights[0][0]: .3f}, c = {biases[0]: .3f}"
@@ -204,7 +198,6 @@ def resume_training():
             Training is Resumed!
             See <a href="/status">/status</a>
         """
-
 
     return "Training is already ongoing!"
 
